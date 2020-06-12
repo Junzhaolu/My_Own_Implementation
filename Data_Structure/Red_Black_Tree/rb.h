@@ -33,8 +33,8 @@ public:
 	void print_Tree();
 private:
 	RB_Node* root;
-	unsigned int black_Depth_Helper();
 	bool is_Valid_RB_Tree();
+	bool valid_Helper(RB_Node*);
 	void erase_helper(RB_Node*);
 	void insert_fix(RB_Node*);
 	void remove_fix(RB_Node*);
