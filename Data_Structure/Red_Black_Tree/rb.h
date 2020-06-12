@@ -30,14 +30,16 @@ public:
 	void remove(unsigned short);
 	bool find(unsigned short);
 	//*******************************
-	void print_Tree();
+	//
+	//If have time, could work on iterator
+	//
 private:
 	RB_Node* root;
 	bool is_Valid_RB_Tree();
-	bool valid_Helper(RB_Node*);
-	void erase_helper(RB_Node*);
-	void insert_fix(RB_Node*);
-	void remove_fix(RB_Node*);
+	void valid_Helper(RB_Node*,std::vector<unsigned int>&,unsigned int&);
+	void erase_Helper(RB_Node*);
+	void insert_Fix(RB_Node*);
+	void remove_Fix(RB_Node*);
 	void rotate_Left(RB_Node*);
 	void rotate_Right(RB_Node*);
 	RB_Node* get_Sibling(RB_Node*);
