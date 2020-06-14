@@ -59,19 +59,27 @@ void RB_TREE::insert(unsigned short val)
 
 void RB_TREE::remove(unsigned short val)
 {
+	bool node_is_lf = 0;
+	unsigned char num_node_chld = 0;
+	//If the node does not exists, return
 	RB_Node* node = find_Node(val);
 	if(!node)
 		return;
-	if(node == root && (!(node->left_Child) && !(node->right_Child)))
+	//Determine whether the node is a lf or rt child
+	if(node->parent)
 	{
-		delete node;
-		root = NULL;
-		return;
+		if(node == node->parent->left_Child)
+			node_is_lf = 1;
 	}
-	bool node_is_lf = 0;
-	if(node == node->parent->left_Child)
-		node_is_lf = 1;
-	if(!(node->left_Child) && !(node->right_Child))
+	//Determine the number of child this node has
+	if(node->left_Child && node->right_Child)
+		num_node_chld = 2;
+	else if((!(node->left_Child) && node->right_Child)
+		     || (node->left_Child && !(node->right_Child)))
+		num_node_chld = 1;
+	//Depending on the number of children, we have 
+	//3 different scenarios
+	if(num_node_chld == 0)
 	{
 		if(node->is_Red)
 		{
@@ -84,58 +92,119 @@ void RB_TREE::remove(unsigned short val)
 		}
 		else
 		{
+			if(node == root)
+			{
+				delete node;
+				root = NULL;
+				return;
+			}
 			node->double_Black = 1;
 			remove_Fix(node);
+			delete node;
 		}
 	}
-	else if(!(node->left_Child) && node->right_Child)
+	else if(num_node_chld == 1)
 	{
 		if(node->is_Red)
 		{
 			if(node_is_lf)
-				node->parent->left_Child = node->right_Child;
+			{
+				if(node->left_Child)
+				{
+					node->parent->left_Child = node->left_Child;
+					node->left_Child->parent = node->parent;
+				}
+				else
+				{
+					node->parent->left_Child = node->right_Child;
+					node->right_Child->parent = node->parent;
+				}
+			}
 			else
-				node->parent->right_Child = node->right_Child;
-			node->right_Child->parent = node->parent;
+			{
+				if(node->left_Child)
+				{
+					node->parent->right_Child = node->left_Child;
+					node->left_Child->parent = node->parent;
+				}
+				else
+				{
+					node->parent->right_Child = node->right_Child;
+					node->right_Child->parent = node->parent;
+				}
+			}
 			delete node;
-			return;
 		}
 		else
 		{
-			node->value = right_Child->value;
-			remove_Fix(node->right_Child);
-		}
-	}
-	else if(node->left_Child && !(node->right_Child))
-	{
-		if(node->is_Red)
-		{
+			if(node == root)
+			{
+				if(node->left_Child)
+				{
+					root = node->left_Child;
+					node->left_Child->parent = NULL;
+					node->left_Child->is_Red = 0;
+				}
+				else
+				{
+					root = node->right_Child;
+					node->right_Child->parent = NULL;
+					node->right_Child->is_Red = 0;
+				}
+				delete node;
+				return;
+			}
 			if(node_is_lf)
-				node->parent->left_Child = node->left_Child;
+			{
+				if(node->left_Child)
+				{
+					node->parent->left_Child = node->left_Child;
+					node->left_Child->parent = node->parent;
+					node->left_Child->double_Black = 1;
+					remove_Fix(node->left_Child);
+				}
+				else
+				{
+					node->parent->left_Child = node->right_Child;
+					node->right_Child->parent = node->parent;
+					node->right_Child->double_Black = 1;
+					remove_Fix(node->right_Child);	
+				}
+			}
 			else
-				node->parent->right_Child = node->left_Child;
-			node->left_Child->parent = node->parent;
+			{
+				if(node->left_Child)
+				{
+					node->parent->right_Child = node->left_Child;
+					node->left_Child->parent = node->parent;
+					node->left_Child->double_Black = 1;
+					remove_Fix(node->left_Child);
+				}
+				else
+				{
+					node->parent->right_Child = node->right_Child;
+					node->right_Child->parent = node->parent;
+					node->right_Child->double_Black = 1;
+					remove_Fix(node->right_Child);	
+				}
+			}
 			delete node;
-			return;
-		}
-		else
-		{
-			node->value = left_Child->value;
-			remove_Fix(node->left_Child);
 		}
 	}
-	else if(node->left_Child && node->right_Child)
+	else if(num_node_chld == 2)
 	{
+		RB_Node* replacement;
 		//**********************************
 		//See line#5 for how to modify
-		RB_Node* replacement;
 		if(rm_by_succ)
 			replacement = successor(node);
 		else if(!rm_by_succ)
 			replacement = predecessor(node);
 		//**********************************
 		node->value = replacement->value;
+		replacement->double_Black = 1;
 		remove_Fix(replacement);
+		delete replacement;
 	}
 }
 
@@ -273,26 +342,174 @@ void RB_TREE::remove_Fix(RB_Node* node)
 			node->double_Black = 0;
 			return;
 		}
-		//**********************************
-		//See line#5 for how to modify
-		RB_Node* replacement;
-		if(rm_by_succ)
-			replacement = successor(node);
-		else if(!rm_by_succ)
-			replacement = predecessor(node);
-		//**********************************
-		node->value = replacement->value;
-		remove_Fix(replacement);
-		return;
 	}
 	bool node_is_lf = 0;
-	if(node->is_Red)
+	RB_Node* sibling = get_Sibling(node);
+	if(node->parent->left_Child)
 	{
-
+		if(node == node->parent->left_Child)
+			node_is_lf = 1;
 	}
-	else
+	if((!(node->parent->is_Red) && !(sibling->is_Red)) ||
+	   (node->parent->is_Red && !(sibling->is_Red)))
 	{
-
+		if(!(sibling->left_Child) && !(sibling->right_Child)) ||
+			((sibling->left_Child && sibling->right_Child) && (!(sibling->left_Child->is_Red) && !(sibling->right_Child->is_Red)))
+		{
+			node->double_Black = 0;
+			sibling->is_Red = 0;
+			if(node->parent->is_Red)
+				node->parent->is_Red = 0;
+			else
+			{
+				node->parent->double_Black = 1;
+				remove_Fix(node->parent);
+			}
+		}
+		else if(sibling->left_Child && sibling->right_Child)
+		{
+			if(node_is_lf)
+			{
+				if(sibling->right_Child->is_Red)
+				{
+					RB_Node* tmp = sibling->right_Child;
+					swap_Color(node->parent,sibling);
+					rotate_Left(node->parent);
+					node->double_Black = 0;
+					tmp->is_Red = 0;
+				}
+				else
+				{
+					if(sibling->left_Child->is_Red)
+					{
+						RB_Node* tmp = sibling->left_Child;
+						swap_Color(sibling,sibling->left_Child);
+						rotate_Right(sibling);
+						swap_Color(node->parent,tmp);
+						rotate_Left(node->parent);
+						node->double_Black = 0;
+						sibling->is_Red = 0;
+					}
+				}
+			}
+			else
+			{
+				if(sibling->left_Child->is_Red)
+				{
+					RB_Node* tmp = sibling->left_Child;
+					swap_Color(node->parent,sibling);
+					rotate_Right(node->parent);
+					node->double_Black = 0;
+					tmp->is_Red = 0;
+				}
+				else
+				{
+					if(sibling->right_Child->is_Red)
+					{
+						RB_Node* tmp = sibling->right_Child;
+						swap_Color(sibling,sibling->right_Child);
+						rotate_Left(sibling);
+						swap_Color(node->parent,tmp);
+						rotate_Right(node->parent);
+						node->double_Black = 0;
+						sibling->is_Red = 0;
+					}
+				}
+			}
+		}
+		else if(!(sibling->left_Child) && sibling->right_Child)
+		{
+			if(!(sibling->right_Child->is_Red))
+			{
+				node->double_Black = 0;
+				sibling->is_Red = 1;
+				if(node->parent->is_Red)
+					node->parent->is_Red = 0;
+				else
+				{
+					node->parent->double_Black = 1;
+					remove_Fix(node->parent);
+				}
+			}
+			else
+			{
+				if(node_is_lf)
+				{
+					if(sibling->right_Child->is_Red)
+					{
+						RB_Node* tmp = sibling->right_Child;
+						swap_Color(node->parent,sibling);
+						rotate_Left(node->parent);
+						node->double_Black = 0;
+						tmp->is_Red = 0;
+					}
+				}
+				else
+				{
+					if(sibling->right_Child->is_Red)
+					{
+						RB_Node* tmp = sibling->right_Child;
+						swap_Color(tmp,sibling);
+						rotate_Left(sibling);
+						swap_Color(node->parent,tmp);
+						rotate_Right(node->parent);
+						node->double_Black = 0;
+						sibling->is_Red = 0;
+					}
+				}
+			}
+		}
+		else if(sibling->left_Child && !(sibling->right_Child))
+		{
+			if(!(sibling->left_Child->is_Red))
+			{
+				node->double_Black = 0;
+				sibling->is_Red = 1;
+				if(node->parent->is_Red)
+					node->parent->is_Red = 0;
+				else
+				{
+					node->parent->double_Black = 1;
+					remove_Fix(node->parent);
+				}
+			}
+			else
+			{
+				if(node_is_lf)
+				{
+					if(sibling->left_Child->is_Red)
+					{
+						RB_Node* tmp = sibling->left_Child;
+						swap_Color(tmp,sibling);
+						rotate_Right(sibling);
+						swap_Color(node->parent,tmp);
+						rotate_Left(node->parent);
+						node->double_Black = 0;
+						sibling->is_Red = 0;
+					}
+				}
+				else
+				{
+					if(sibling->left_Child->is_Red)
+					{
+						RB_Node* tmp = sibling->left_Child
+						swap_Color(node->parent,sibling);
+						rotate_Right(node->parent);
+						node->double_Black = 0;
+						tmp->is_Red = 0;
+					}
+				}
+			}
+		}
+	}
+	else if(!(node->parent->is_Red) && sibling->is_Red)
+	{
+		swap_Color(node->parent,sibling);
+		if(node_is_lf)
+			rotate_Left(node->parent);
+		else
+			rotate_Right(node->parent);
+		node->double_Black = 0;
 	}
 }
 
@@ -344,11 +561,17 @@ void RB_TREE::rotate_Right(RB_Node* node)
 	}
 }
 
-void swap_color(RB_Node* node1,RB_Node* node2)
+void RB_TREE::swap_color(RB_Node* node1,RB_Node* node2)
 {
 	bool color = node1->is_Red;
 	node1->is_Red = node2->is_Red;
 	node2->is_Red = color;
+}
+
+void RB_TREE::flip_Color(RB_Node* node)
+{
+	bool orig_color = node->is_Red;
+	orig_color ? node->is_Red = 0 : node->is_Red = 1;
 }
 
 RB_Node* RB_TREE::get_Sibling(RB_Node* node)

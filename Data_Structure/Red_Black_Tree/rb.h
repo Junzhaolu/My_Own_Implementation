@@ -43,6 +43,7 @@ private:
 	void rotate_Left(RB_Node*);
 	void rotate_Right(RB_Node*);
 	void swap_Color(RB_Node*,RB_Node*);
+	void flip_Color(RB_Node*);
 	RB_Node* get_Sibling(RB_Node*);
 	RB_Node* find_Node(unsigned short);
 	RB_Node* predecessor(RB_Node*);
