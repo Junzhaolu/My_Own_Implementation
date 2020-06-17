@@ -1,15 +1,14 @@
 #include"rb.h"
-#include<algorithm>
-#include<vector>
 
 //By default, successor is used
-#define REMOVE_REPLACED_BY_SUCESSOR
+#define REMOVE_REPLACED_BY_SUCESSOR 1
 //If want to use predecessor, comment-out
 //the line above
 
-bool rm_by_succ = 0;
 #ifdef REMOVE_REPLACED_BY_SUCESSOR
-rm_by_succ = 1;
+	bool rm_by_succ = 1;
+#else
+	bool rm_by_succ = 0;
 #endif
 
 RB_TREE::RB_TREE():root(NULL)
@@ -23,7 +22,7 @@ RB_TREE::~RB_TREE()
 
 void RB_TREE::erase()
 {
-	erase_helper(root);
+	erase_Helper(root);
 	root = NULL;
 }
 
@@ -99,7 +98,7 @@ void RB_TREE::remove(unsigned short val)
 				return;
 			}
 			node->double_Black = 1;
-			remove_Fix(node);
+			remove_Fix(node,0);
 			delete node;
 		}
 	}
@@ -158,34 +157,38 @@ void RB_TREE::remove(unsigned short val)
 			{
 				if(node->left_Child)
 				{
+					node->left_Child->is_Red = 0;
 					node->parent->left_Child = node->left_Child;
 					node->left_Child->parent = node->parent;
 					node->left_Child->double_Black = 1;
-					remove_Fix(node->left_Child);
+					remove_Fix(node->left_Child,0);
 				}
 				else
 				{
+					node->right_Child->is_Red = 0;
 					node->parent->left_Child = node->right_Child;
 					node->right_Child->parent = node->parent;
 					node->right_Child->double_Black = 1;
-					remove_Fix(node->right_Child);	
+					remove_Fix(node->right_Child,0);	
 				}
 			}
 			else
 			{
 				if(node->left_Child)
 				{
+					node->left_Child->is_Red = 0;
 					node->parent->right_Child = node->left_Child;
 					node->left_Child->parent = node->parent;
 					node->left_Child->double_Black = 1;
-					remove_Fix(node->left_Child);
+					remove_Fix(node->left_Child,0);
 				}
 				else
 				{
+					node->right_Child->is_Red = 0;
 					node->parent->right_Child = node->right_Child;
 					node->right_Child->parent = node->parent;
 					node->right_Child->double_Black = 1;
-					remove_Fix(node->right_Child);	
+					remove_Fix(node->right_Child,0);	
 				}
 			}
 			delete node;
@@ -203,7 +206,7 @@ void RB_TREE::remove(unsigned short val)
 		//**********************************
 		node->value = replacement->value;
 		replacement->double_Black = 1;
-		remove_Fix(replacement);
+		remove_Fix(replacement,0);
 		delete replacement;
 	}
 }
@@ -221,12 +224,13 @@ bool RB_TREE::is_Valid_RB_Tree()
 {
 	if(!root)
 		return true;
-	std::vector<unsigned int> vec;	
-	valid_Helper(root,vec,0);
-	unsigned int size = vec[0].size();
+	std::vector<unsigned int>vec;	
+	unsigned int path = 0;
+	valid_Helper(root,vec,path);
+	unsigned size = vec[0];
 	for(unsigned i = 1; i < vec.size(); ++i)
 	{
-		if(vec[i].size() != size)
+		if(vec[i] != size)
 			return false;
 	}
 	return true;
@@ -272,8 +276,8 @@ void RB_TREE::erase_Helper(RB_Node* node)
 {
 	if(!node)
 		return;
-	erase_helper(node->left_Child);
-	erase_helper(node->right_Child);
+	erase_Helper(node->left_Child);
+	erase_Helper(node->right_Child);
 	delete node;
 }
 
@@ -333,7 +337,7 @@ void RB_TREE::insert_Fix(RB_Node* p,RB_Node* c)
 	}
 }
 
-void RB_TREE::remove_Fix(RB_Node* node)
+void RB_TREE::remove_Fix(RB_Node* node, Bool no_need_to_delete_node)
 {
 	if(node == root)
 	{
@@ -353,17 +357,16 @@ void RB_TREE::remove_Fix(RB_Node* node)
 	if((!(node->parent->is_Red) && !(sibling->is_Red)) ||
 	   (node->parent->is_Red && !(sibling->is_Red)))
 	{
-		if(!(sibling->left_Child) && !(sibling->right_Child)) ||
-			((sibling->left_Child && sibling->right_Child) && (!(sibling->left_Child->is_Red) && !(sibling->right_Child->is_Red)))
+		if((!(sibling->left_Child) && !(sibling->right_Child)) ||
+			((sibling->left_Child && sibling->right_Child) && (!(sibling->left_Child->is_Red) && !(sibling->right_Child->is_Red))))
 		{
-			node->double_Black = 0;
-			sibling->is_Red = 0;
+			sibling->is_Red = 1;
 			if(node->parent->is_Red)
 				node->parent->is_Red = 0;
 			else
 			{
 				node->parent->double_Black = 1;
-				remove_Fix(node->parent);
+				remove_Fix(node->parent,1);
 			}
 		}
 		else if(sibling->left_Child && sibling->right_Child)
@@ -375,7 +378,6 @@ void RB_TREE::remove_Fix(RB_Node* node)
 					RB_Node* tmp = sibling->right_Child;
 					swap_Color(node->parent,sibling);
 					rotate_Left(node->parent);
-					node->double_Black = 0;
 					tmp->is_Red = 0;
 				}
 				else
@@ -387,7 +389,6 @@ void RB_TREE::remove_Fix(RB_Node* node)
 						rotate_Right(sibling);
 						swap_Color(node->parent,tmp);
 						rotate_Left(node->parent);
-						node->double_Black = 0;
 						sibling->is_Red = 0;
 					}
 				}
@@ -399,7 +400,6 @@ void RB_TREE::remove_Fix(RB_Node* node)
 					RB_Node* tmp = sibling->left_Child;
 					swap_Color(node->parent,sibling);
 					rotate_Right(node->parent);
-					node->double_Black = 0;
 					tmp->is_Red = 0;
 				}
 				else
@@ -411,7 +411,6 @@ void RB_TREE::remove_Fix(RB_Node* node)
 						rotate_Left(sibling);
 						swap_Color(node->parent,tmp);
 						rotate_Right(node->parent);
-						node->double_Black = 0;
 						sibling->is_Red = 0;
 					}
 				}
@@ -421,14 +420,13 @@ void RB_TREE::remove_Fix(RB_Node* node)
 		{
 			if(!(sibling->right_Child->is_Red))
 			{
-				node->double_Black = 0;
 				sibling->is_Red = 1;
 				if(node->parent->is_Red)
 					node->parent->is_Red = 0;
 				else
 				{
 					node->parent->double_Black = 1;
-					remove_Fix(node->parent);
+					remove_Fix(node->parent,1);
 				}
 			}
 			else
@@ -440,7 +438,6 @@ void RB_TREE::remove_Fix(RB_Node* node)
 						RB_Node* tmp = sibling->right_Child;
 						swap_Color(node->parent,sibling);
 						rotate_Left(node->parent);
-						node->double_Black = 0;
 						tmp->is_Red = 0;
 					}
 				}
@@ -453,7 +450,6 @@ void RB_TREE::remove_Fix(RB_Node* node)
 						rotate_Left(sibling);
 						swap_Color(node->parent,tmp);
 						rotate_Right(node->parent);
-						node->double_Black = 0;
 						sibling->is_Red = 0;
 					}
 				}
@@ -463,14 +459,13 @@ void RB_TREE::remove_Fix(RB_Node* node)
 		{
 			if(!(sibling->left_Child->is_Red))
 			{
-				node->double_Black = 0;
 				sibling->is_Red = 1;
 				if(node->parent->is_Red)
 					node->parent->is_Red = 0;
 				else
 				{
 					node->parent->double_Black = 1;
-					remove_Fix(node->parent);
+					remove_Fix(node->parent,1);
 				}
 			}
 			else
@@ -492,7 +487,7 @@ void RB_TREE::remove_Fix(RB_Node* node)
 				{
 					if(sibling->left_Child->is_Red)
 					{
-						RB_Node* tmp = sibling->left_Child
+						RB_Node* tmp = sibling->left_Child;
 						swap_Color(node->parent,sibling);
 						rotate_Right(node->parent);
 						node->double_Black = 0;
@@ -509,7 +504,14 @@ void RB_TREE::remove_Fix(RB_Node* node)
 			rotate_Left(node->parent);
 		else
 			rotate_Right(node->parent);
-		node->double_Black = 0;
+		remove_Fix(node,1);
+	}
+	if(!no_need_to_delete_node)
+	{
+		if(node_is_lf)
+			node->parent->left_Child = NULL;
+		else
+			node->parent->right_Child = NULL;
 	}
 }
 
@@ -561,7 +563,7 @@ void RB_TREE::rotate_Right(RB_Node* node)
 	}
 }
 
-void RB_TREE::swap_color(RB_Node* node1,RB_Node* node2)
+void RB_TREE::swap_Color(RB_Node* node1,RB_Node* node2)
 {
 	bool color = node1->is_Red;
 	node1->is_Red = node2->is_Red;
