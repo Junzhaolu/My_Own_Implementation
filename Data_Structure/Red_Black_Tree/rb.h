@@ -1,6 +1,13 @@
+//********************************************************
+//Implementation finished on June 18, 2020
+//
+//Implementation done by Junzhao Lu
+//
+//Note: const_iterator class has not been implemented
+//********************************************************
+
 #ifndef RB_H
 #define RB_H
-#include"print_bst.h"
 #include<vector>
 #include<stdexcept>
 #include<iostream>
@@ -29,19 +36,19 @@ struct RB_Node
 	RB_Node* left_Child;
 };
 
+
 template<typename Key, typename Value>
 class RB_TREE
 {
 public:
 	RB_TREE();
 	~RB_TREE();
-	void erase();
+	void clear();
 	void insert(const std::pair<Key,Value>&);
 	void remove(const Key&);
-	void print() const;
 	Value& operator[](const Key& key);
 	const Value& operator[](const Key& key) const;
-	friend void prettyPrintBST(RB_TREE<PPKey, PPValue> & tree);
+	bool is_Valid_RB_Tree();
 public:
 	class iterator
 	{
@@ -55,7 +62,7 @@ public:
 		bool operator!=(const iterator& itr) const;
 	private:
 		friend class RB_TREE<Key,Value>;
-		iterator(const RB_Node<Key,Value>* node);
+		iterator(RB_Node<Key,Value>* node);
 		RB_Node<Key,Value>* current;
 	};
 private:
@@ -63,17 +70,17 @@ private:
 	iterator find(const Key&) const;
 	iterator begin() const;
 	iterator end() const;
-	bool is_Valid_RB_Tree() const;
-	void valid_Helper(RB_Node<Key,Value>*,std::vector<unsigned int>&,unsigned int&);
-	void erase_Helper(RB_Node<Key,Value>*);
+	void printRoot (RB_Node<Key, Value> *r) const;
+	void valid_Helper(RB_Node<Key,Value>*,std::vector<unsigned int>&,unsigned int);
+	void clear_Helper(RB_Node<Key,Value>*);
 	void insert_Fix(RB_Node<Key,Value>*,RB_Node<Key,Value>*);
 	void remove_Fix(RB_Node<Key,Value>*,bool);
 	void rotate_Left(RB_Node<Key,Value>*);
 	void rotate_Right(RB_Node<Key,Value>*);
 	void swap_Color(RB_Node<Key,Value>*,RB_Node<Key,Value>*);
 	RB_Node<Key,Value>* get_Sibling(RB_Node<Key,Value>*) const; 
-	RB_Node<Key,Value>* predecessor(RB_Node<Key,Value>*) const;
-	RB_Node<Key,Value>* successor(RB_Node<Key,Value>*) const;
+	static RB_Node<Key,Value>* predecessor(RB_Node<Key,Value>*);
+	static RB_Node<Key,Value>* successor(RB_Node<Key,Value>*);
 	RB_Node<Key,Value>* internal_find(const Key& key) const;
 };
 
@@ -89,23 +96,27 @@ private:
 	bool rm_by_succ = 0;
 #endif
 
+
 template<typename Key, typename Value>
 RB_TREE<Key,Value>::RB_TREE():root(NULL)
 {
 }
 
+
 template<typename Key, typename Value>
 RB_TREE<Key,Value>::~RB_TREE()
 {
-	erase();
+	clear();
 }
 
+
 template<typename Key, typename Value>
-void RB_TREE<Key,Value>::erase()
+void RB_TREE<Key,Value>::clear()
 {
-	erase_Helper(root);
+	clear_Helper(root);
 	root = NULL;
 }
+
 
 template<typename Key, typename Value>
 void RB_TREE<Key,Value>::insert(const std::pair<Key,Value>& pr)
@@ -138,13 +149,14 @@ void RB_TREE<Key,Value>::insert(const std::pair<Key,Value>& pr)
 		insert_Fix(prev,curr);
 }
 
+
 template<typename Key,typename Value>
 void RB_TREE<Key,Value>::remove(const Key& k)
 {
 	bool node_is_lf = 0;
 	unsigned char num_node_chld = 0;
 	//If the node does not exists, return
-	RB_Node<Key,Value>* node = interal_find(k);
+	RB_Node<Key,Value>* node = internal_find(k);
 	if(!node)
 		return;
 	//Determine whether the node is a lf or rt child
@@ -161,6 +173,7 @@ void RB_TREE<Key,Value>::remove(const Key& k)
 		num_node_chld = 1;
 	//Depending on the number of children, we have 
 	//3 different scenarios
+	//First scenario is when there is no children
 	if(num_node_chld == 0)
 	{
 		if(node->is_Red)
@@ -185,8 +198,11 @@ void RB_TREE<Key,Value>::remove(const Key& k)
 			delete node;
 		}
 	}
+	//Then it is the case when there is only 1 child
 	else if(num_node_chld == 1)
 	{
+		//Depending on the color and direction of the node,
+		//we further divide the cases
 		if(node->is_Red)
 		{
 			if(node_is_lf)
@@ -240,60 +256,131 @@ void RB_TREE<Key,Value>::remove(const Key& k)
 			{
 				if(node->left_Child)
 				{
-					node->left_Child->is_Red = 0;
 					node->parent->left_Child = node->left_Child;
 					node->left_Child->parent = node->parent;
-					node->left_Child->double_Black = 1;
-					remove_Fix(node->left_Child,0);
+					//For the case of deleting black node, we 
+					//need further fixing
+					if(!(node->left_Child->is_Red))
+					{
+						node->left_Child->double_Black = 1;
+						remove_Fix(node->left_Child,1);
+					}
+					else
+						node->left_Child->is_Red = 0;
 				}
 				else
 				{
-					node->right_Child->is_Red = 0;
 					node->parent->left_Child = node->right_Child;
 					node->right_Child->parent = node->parent;
-					node->right_Child->double_Black = 1;
-					remove_Fix(node->right_Child,0);	
+					if(!(node->right_Child->is_Red))
+					{
+						node->right_Child->double_Black = 1;
+						remove_Fix(node->right_Child,1);	
+					}
+					else
+						node->right_Child->is_Red = 0;
 				}
 			}
 			else
 			{
 				if(node->left_Child)
 				{
-					node->left_Child->is_Red = 0;
 					node->parent->right_Child = node->left_Child;
 					node->left_Child->parent = node->parent;
-					node->left_Child->double_Black = 1;
-					remove_Fix(node->left_Child,0);
+					if(!(node->left_Child->is_Red))
+					{
+						node->left_Child->double_Black = 1;
+						remove_Fix(node->left_Child,1);
+					}
+					else
+						node->left_Child->is_Red = 0;
 				}
 				else
 				{
-					node->right_Child->is_Red = 0;
 					node->parent->right_Child = node->right_Child;
 					node->right_Child->parent = node->parent;
-					node->right_Child->double_Black = 1;
-					remove_Fix(node->right_Child,0);	
+					if(!(node->right_Child->is_Red))
+					{
+						node->right_Child->double_Black = 1;
+						remove_Fix(node->right_Child,1);	
+					}	
+					else
+						node->right_Child->is_Red = 0;
 				}
 			}
 			delete node;
 		}
 	}
+	//Last case is when there are 2 children. In this
+	//case, we can decide whether to replace the node
+	//by its predecessor or successor
 	else if(num_node_chld == 2)
 	{
 		RB_Node<Key,Value>* replacement;
 		//**********************************
-		//See line#5 for how to modify
+		//See line#85 for how to use this
 		if(rm_by_succ)
 			replacement = successor(node);
 		else if(!rm_by_succ)
 			replacement = predecessor(node);
 		//**********************************
+		replacement->item.first = replacement->key;
+		replacement->item.second = replacement->value;
 		node->key = replacement->key;
 		node->value = replacement->value;
-		replacement->double_Black = 1;
-		remove_Fix(replacement,0);
-		delete replacement;
+		node->item = replacement->item;
+		if(!(replacement->is_Red))
+		{
+			if(rm_by_succ && replacement->right_Child)
+			{
+				replacement->key = replacement->right_Child->key;
+				replacement->value = replacement->right_Child->value;
+				replacement->item.first = replacement->key;
+				replacement->item.second = replacement->value;
+				if(!(replacement->right_Child->is_Red))
+				{
+					delete replacement->right_Child;
+					replacement->right_Child = NULL;
+					replacement->double_Black = 1;
+					remove_Fix(replacement,1);
+				}
+				else
+				{
+					delete replacement->right_Child;
+					replacement->right_Child = NULL;
+				}
+			}
+			else if(!rm_by_succ && replacement->left_Child)
+			{
+				replacement->key = replacement->left_Child->key;
+				replacement->value = replacement->left_Child->value;
+				replacement->item.first = replacement->key;
+				replacement->item.second = replacement->value;
+				if(!(replacement->left_Child->is_Red))
+				{
+					delete replacement->left_Child;
+					replacement->left_Child = NULL;
+					replacement->double_Black = 1;
+					remove_Fix(replacement,1);
+				}
+				else
+				{
+					delete replacement->left_Child;
+					replacement->left_Child = NULL;
+				}
+			}
+		}
+		else
+		{
+			if(replacement == replacement->parent->left_Child)
+				replacement->parent->left_Child = NULL;
+			else
+				replacement->parent->right_Child = NULL;
+			delete replacement;
+		}
 	}
 }
+
 
 template<typename Key,typename Value>
 typename RB_TREE<Key,Value>::iterator RB_TREE<Key,Value>::find(const Key& k) const
@@ -302,8 +389,9 @@ typename RB_TREE<Key,Value>::iterator RB_TREE<Key,Value>::find(const Key& k) con
 	return itr;
 }
 
+
 template<typename Key,typename Value>
-bool RB_TREE<Key,Value>::is_Valid_RB_Tree() const
+bool RB_TREE<Key,Value>::is_Valid_RB_Tree()
 {
 	if(!root)
 		return true;
@@ -319,37 +407,49 @@ bool RB_TREE<Key,Value>::is_Valid_RB_Tree() const
 	return true;
 }
 
+
 template<typename Key,typename Value>
-void RB_TREE<Key,Value>::valid_Helper(RB_Node<Key,Value>* node,std::vector<unsigned int>& vec,unsigned int& path)
+void RB_TREE<Key,Value>::valid_Helper(RB_Node<Key,Value>* node,std::vector<unsigned int>& vec,unsigned int path)
 {
 	if(!node)
 		return;
 	if(!(node->is_Red))
+	{
+		if(node == root)
+			vec.push_back(0);
 		++vec[path];
+	}
 	if(node->left_Child && node->right_Child)
 	{
+		vec.push_back(vec[path]);
+		//This local variable always keeps track
+		//of what path# to use 
+		unsigned int path_ = vec.size()-1;
 		valid_Helper(node->left_Child,vec,path);
-		vec[path+1] = vec[path];
-		valid_Helper(node->left_Child,vec,++path);
+		valid_Helper(node->left_Child,vec,path_);
 	}
 	else
 	{
 		if(node->left_Child)
 			valid_Helper(node->left_Child,vec,path);
-		else
+		else if(node->right_Child)
 			valid_Helper(node->right_Child,vec,path);
+		else if(!(node->left_Child) && !(node->right_Child))
+			return;
 	}
 }
 
+
 template<typename Key,typename Value>
-void RB_TREE<Key,Value>::erase_Helper(RB_Node<Key,Value>* node)
+void RB_TREE<Key,Value>::clear_Helper(RB_Node<Key,Value>* node)
 {
 	if(!node)
 		return;
-	erase_Helper(node->left_Child);
-	erase_Helper(node->right_Child);
+	clear_Helper(node->left_Child);
+	clear_Helper(node->right_Child);
 	delete node;
 }
+
 
 template<typename Key,typename Value>
 void RB_TREE<Key,Value>::insert_Fix(RB_Node<Key,Value>* p,RB_Node<Key,Value>* c)
@@ -375,11 +475,12 @@ void RB_TREE<Key,Value>::insert_Fix(RB_Node<Key,Value>* p,RB_Node<Key,Value>* c)
 			return;
 		else
 		{
-			if(p->parent->is_Red)
-				p->parent->is_Red = 0;
-			else
-				p->parent->is_Red = 1;
-			insert_Fix(p->parent,p);
+			p->parent->is_Red = 1;
+			if(p->parent->parent != root)
+			{
+				if(p->parent->parent->is_Red)
+					insert_Fix(p->parent->parent,p->parent);
+			}
 		}
 	}
 	else if(!re_color && re_structure)
@@ -408,6 +509,8 @@ void RB_TREE<Key,Value>::insert_Fix(RB_Node<Key,Value>* p,RB_Node<Key,Value>* c)
 	}
 }
 
+
+//See internet/youtube for the general idea of fixing for removal
 template<typename Key,typename Value>
 void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_delete_node)
 {
@@ -448,7 +551,6 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 				if(sibling->right_Child->is_Red)
 				{
 					RB_Node<Key,Value>* tmp = sibling->right_Child;
-					swap_Color(node->parent,sibling);
 					rotate_Left(node->parent);
 					tmp->is_Red = 0;
 				}
@@ -456,10 +558,7 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 				{
 					if(sibling->left_Child->is_Red)
 					{
-						RB_Node<Key,Value>* tmp = sibling->left_Child;
-						swap_Color(sibling,sibling->left_Child);
 						rotate_Right(sibling);
-						swap_Color(node->parent,tmp);
 						rotate_Left(node->parent);
 						sibling->is_Red = 0;
 					}
@@ -470,7 +569,6 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 				if(sibling->left_Child->is_Red)
 				{
 					RB_Node<Key,Value>* tmp = sibling->left_Child;
-					swap_Color(node->parent,sibling);
 					rotate_Right(node->parent);
 					tmp->is_Red = 0;
 				}
@@ -478,10 +576,7 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 				{
 					if(sibling->right_Child->is_Red)
 					{
-						RB_Node<Key,Value>* tmp = sibling->right_Child;
-						swap_Color(sibling,sibling->right_Child);
 						rotate_Left(sibling);
-						swap_Color(node->parent,tmp);
 						rotate_Right(node->parent);
 						sibling->is_Red = 0;
 					}
@@ -508,7 +603,6 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 					if(sibling->right_Child->is_Red)
 					{
 						RB_Node<Key,Value>* tmp = sibling->right_Child;
-						swap_Color(node->parent,sibling);
 						rotate_Left(node->parent);
 						tmp->is_Red = 0;
 					}
@@ -517,10 +611,7 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 				{
 					if(sibling->right_Child->is_Red)
 					{
-						RB_Node<Key,Value>* tmp = sibling->right_Child;
-						swap_Color(tmp,sibling);
 						rotate_Left(sibling);
-						swap_Color(node->parent,tmp);
 						rotate_Right(node->parent);
 						sibling->is_Red = 0;
 					}
@@ -546,10 +637,7 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 				{
 					if(sibling->left_Child->is_Red)
 					{
-						RB_Node<Key,Value>* tmp = sibling->left_Child;
-						swap_Color(tmp,sibling);
 						rotate_Right(sibling);
-						swap_Color(node->parent,tmp);
 						rotate_Left(node->parent);
 						node->double_Black = 0;
 						sibling->is_Red = 0;
@@ -560,7 +648,6 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 					if(sibling->left_Child->is_Red)
 					{
 						RB_Node<Key,Value>* tmp = sibling->left_Child;
-						swap_Color(node->parent,sibling);
 						rotate_Right(node->parent);
 						node->double_Black = 0;
 						tmp->is_Red = 0;
@@ -571,12 +658,36 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 	}
 	else if(!(node->parent->is_Red) && sibling->is_Red)
 	{
-		swap_Color(node->parent,sibling);
 		if(node_is_lf)
 			rotate_Left(node->parent);
 		else
 			rotate_Right(node->parent);
-		remove_Fix(node,1);
+		sibling = get_Sibling(node);
+		if(sibling->left_Child && sibling->right_Child)
+		{
+			if(!(sibling->left_Child->is_Red) && !(sibling->right_Child->is_Red))
+				swap_Color(node->parent,sibling);
+			else
+				remove_Fix(node,1);
+		}
+		else if(!(sibling->left_Child) && !(sibling->right_Child))
+		{
+			swap_Color(node->parent,sibling);
+		}
+		else if(!(sibling->left_Child) && sibling->right_Child)
+		{
+			if(!(sibling->right_Child->is_Red))
+				swap_Color(node->parent,sibling);		
+			else
+				remove_Fix(node,1);
+		}
+		else if(sibling->left_Child && !(sibling->right_Child))
+		{
+			if(!(sibling->left_Child->is_Red))
+				swap_Color(node->parent,sibling);		
+			else
+				remove_Fix(node,1);
+		}
 	}
 	if(!no_need_to_delete_node)
 	{
@@ -586,6 +697,7 @@ void RB_TREE<Key,Value>::remove_Fix(RB_Node<Key,Value>* node, bool no_need_to_de
 			node->parent->right_Child = NULL;
 	}
 }
+
 
 template<typename Key,typename Value>
 void RB_TREE<Key,Value>::rotate_Left(RB_Node<Key,Value>* node)
@@ -612,6 +724,7 @@ void RB_TREE<Key,Value>::rotate_Left(RB_Node<Key,Value>* node)
 	}
 }
 
+
 template<typename Key,typename Value>
 void RB_TREE<Key,Value>::rotate_Right(RB_Node<Key,Value>* node)
 {
@@ -637,6 +750,7 @@ void RB_TREE<Key,Value>::rotate_Right(RB_Node<Key,Value>* node)
 	}
 }
 
+
 template<typename Key,typename Value>
 void RB_TREE<Key,Value>::swap_Color(RB_Node<Key,Value>* node1,RB_Node<Key,Value>* node2)
 {
@@ -644,6 +758,7 @@ void RB_TREE<Key,Value>::swap_Color(RB_Node<Key,Value>* node1,RB_Node<Key,Value>
 	node1->is_Red = node2->is_Red;
 	node2->is_Red = color;
 }
+
 
 template<typename Key,typename Value>
 RB_Node<Key,Value>* RB_TREE<Key,Value>::get_Sibling(RB_Node<Key,Value>* node) const
@@ -656,47 +771,104 @@ RB_Node<Key,Value>* RB_TREE<Key,Value>::get_Sibling(RB_Node<Key,Value>* node) co
 		return node->parent->left_Child;
 }
 
+
 template<typename Key,typename Value>
-RB_Node<Key,Value>* RB_TREE<Key,Value>::predecessor(RB_Node<Key,Value>* node) const
+RB_Node<Key,Value>* RB_TREE<Key,Value>::predecessor(RB_Node<Key,Value>* node)
 {
 	if(!node)
 		return NULL;
 	RB_Node<Key,Value>* tmp = node->left_Child;
 	if(!tmp) 
 	{
-		if(!(node->right_Child) && node->parent)
+		if(node->parent)
 		{
 			if(node == node->parent->right_Child)
 				return node->parent;
+			else
+			{
+				if(node->parent->parent)
+				{
+					if(node->parent == node->parent->parent->left_Child)
+					{
+						RB_Node<Key,Value>* gp = node->parent->parent,
+										   *p  = node->parent;
+						while((gp && p) && (gp->left_Child == p))
+						{
+							p = gp;
+							gp = gp->parent;
+						}
+						if(!gp)
+							return NULL;
+						else
+							return gp;
+					}
+					else
+						return node->parent->parent;
+				}
+				else
+					return NULL;
+			}
 		}
-		else if(node->right_Child && node->parent)
+		else
 			return NULL;
 	}	
-	while(tmp->right_Child)
-		tmp = tmp->right_Child;
+	else
+	{
+		while(tmp->right_Child)
+			tmp = tmp->right_Child;
+	}
 	return tmp;
 }
 
+
 template<typename Key,typename Value>
-RB_Node<Key,Value>* RB_TREE<Key,Value>::successor(RB_Node<Key,Value>* node) const
+RB_Node<Key,Value>* RB_TREE<Key,Value>::successor(RB_Node<Key,Value>* node)
 {
 	if(!node)
 		return NULL;
 	RB_Node<Key,Value>* tmp = node->right_Child;
-	if(!tmp)
+	if(!tmp)	
 	{
-		if(!(node->left_Child) && node->parent)
+		if(node->parent)
 		{
 			if(node == node->parent->left_Child)
 				return node->parent;
+			else
+			{
+				if(node->parent->parent)
+				{
+					RB_Node<Key,Value>* gp = node->parent->parent,
+								       *p  = node->parent;
+					if(p == gp->right_Child)
+					{
+						while((gp && p) && (p == gp->right_Child))
+						{
+							p = gp;
+							gp = gp->parent;
+						}
+						if(!gp)
+							return NULL;
+						else
+							return gp;
+					}
+					else
+						return node->parent->parent;
+				}
+				else
+					return NULL;
+			}
 		}
-		else if(node->left_Child && node->parent)
+		else
 			return NULL;
 	}
-	while(tmp->left_Child)
-		tmp = tmp->left_Child;
+	else
+	{
+		while(tmp->left_Child)
+			tmp = tmp->left_Child;
+	}
 	return tmp;
 }
+
 
 template<typename Key,typename Value>
 RB_Node<Key,Value>* RB_TREE<Key,Value>::internal_find(const Key& key) const
@@ -714,12 +886,6 @@ RB_Node<Key,Value>* RB_TREE<Key,Value>::internal_find(const Key& key) const
 	return NULL
 ;}
 
-template<typename Key,typename Value>
-typename RB_TREE<Key,Value>::iterator RB_TREE<Key,Value>::find(const Key& k) const
-{
-	RB_TREE<Key,Value>::iterator it = internal_find(k);
-	return it;
-}
 
 template<typename Key,typename Value>
 typename RB_TREE<Key,Value>::iterator RB_TREE<Key,Value>::begin() const
@@ -731,13 +897,14 @@ typename RB_TREE<Key,Value>::iterator RB_TREE<Key,Value>::begin() const
 	return it;
 }
 
+
 template<typename Key,typename Value>
 typename RB_TREE<Key,Value>::iterator RB_TREE<Key,Value>::end() const
 {
-	RB_Node<Key,Value> node(NULL,0,0);
-	node->invalid = 1;
-	return node;
+	RB_TREE<Key,Value>::iterator itr(NULL);
+	return itr;
 }
+
 
 template<typename Key,typename Value>
 Value& RB_TREE<Key,Value>::operator[](const Key& key)
@@ -749,6 +916,7 @@ Value& RB_TREE<Key,Value>::operator[](const Key& key)
 		throw std::out_of_range("Key does not exists");
 }
 
+
 template<typename Key,typename Value>
 const Value& RB_TREE<Key,Value>::operator[](const Key& key) const
 {
@@ -759,15 +927,18 @@ const Value& RB_TREE<Key,Value>::operator[](const Key& key) const
 		throw std::out_of_range("Key does not exists");	
 }
 
+
 template<typename Key,typename Value>
 RB_TREE<Key,Value>::iterator::iterator():current(NULL)
 {
 }
 
+
 template<typename Key,typename Value>
-RB_TREE<Key,Value>::iterator::iterator(const RB_Node<Key,Value>* node):current(node)
+RB_TREE<Key,Value>::iterator::iterator(RB_Node<Key,Value>* node):current(node)
 {
 }
+
 
 template<typename Key,typename Value>
 typename RB_TREE<Key,Value>::iterator& RB_TREE<Key,Value>::iterator::operator++()
@@ -775,6 +946,7 @@ typename RB_TREE<Key,Value>::iterator& RB_TREE<Key,Value>::iterator::operator++(
 	current = successor(current);
 	return (*this);
 }
+
 
 template<typename Key,typename Value>
 typename RB_TREE<Key,Value>::iterator RB_TREE<Key,Value>::iterator::operator++(int)
@@ -784,6 +956,7 @@ typename RB_TREE<Key,Value>::iterator RB_TREE<Key,Value>::iterator::operator++(i
 	return itr;
 }
 
+
 template<typename Key,typename Value>
 std::pair<Key,Value>& RB_TREE<Key,Value>::iterator::operator*() const
 {
@@ -792,6 +965,7 @@ std::pair<Key,Value>& RB_TREE<Key,Value>::iterator::operator*() const
 	return current->item;
 }
 
+
 template<typename Key,typename Value>
 std::pair<Key,Value>* RB_TREE<Key,Value>::iterator::operator->() const
 {
@@ -799,6 +973,7 @@ std::pair<Key,Value>* RB_TREE<Key,Value>::iterator::operator->() const
 	current->item.second = current->value;
 	return &(current->item);
 }
+
 
 template<typename Key,typename Value>
 bool RB_TREE<Key,Value>::iterator::operator==(const typename RB_TREE<Key,Value>::iterator& itr) const
@@ -810,6 +985,7 @@ bool RB_TREE<Key,Value>::iterator::operator==(const typename RB_TREE<Key,Value>:
 	return this->current->value == itr.current->value;
 }
 
+
 template<typename Key,typename Value>
 bool RB_TREE<Key,Value>::iterator::operator!=(const typename RB_TREE<Key,Value>::iterator& itr) const
 {
@@ -820,12 +996,5 @@ bool RB_TREE<Key,Value>::iterator::operator!=(const typename RB_TREE<Key,Value>:
 	return this->current->value != itr.current->value;	
 }
 
-
-template<typename Key, typename Value>
-void RB_TREE<Key, Value>::print() const
-{
-    printRoot(root);
-    std::cout << "\n";
-}
 
 #endif
