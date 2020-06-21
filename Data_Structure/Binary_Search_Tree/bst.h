@@ -65,14 +65,6 @@ public:
 	iterator end() const;
 	Value& operator[](const Key&);
 	const Value& operator[](const Key&) const;
-	//
-	//
-	template<typename PPKey, typename PPValue>
-    friend void prettyPrintBST(BinarySearchTree<PPKey, PPValue> & tree);
-    virtual void printRoot (Node<Key, Value> *) const;
-    void print() const;
-    //
-    //
 protected:
 	void clear_Helper(Node<Key,Value>*);
 	void rotate_left(Node<Key,Value>*);
@@ -496,7 +488,7 @@ Node<Key,Value>* BinarySearchTree<Key,Value>::smallest_node(Node<Key,Value>* nod
 template<typename Key, typename Value>
 void BinarySearchTree<Key,Value>::rotate_left(Node<Key,Value>* node)
 {
-	if(node == root)
+	if(!(node->parent))
 	{
 		if(node->right_Child)
 		{
@@ -540,7 +532,7 @@ void BinarySearchTree<Key,Value>::rotate_left(Node<Key,Value>* node)
 template<typename Key, typename Value>
 void BinarySearchTree<Key,Value>::rotate_right(Node<Key,Value>* node)
 {
-	if(node == root)
+	if(!(node->parent))
 	{
 		if(node->left_Child)
 		{
@@ -580,12 +572,4 @@ void BinarySearchTree<Key,Value>::rotate_right(Node<Key,Value>* node)
 	}
 }
 
-
-#include"print_bst.h"
-template<typename Key, typename Value>
-void BinarySearchTree<Key, Value>::print() const
-{
-    printRoot(root);
-    std::cout << "\n";
-}
 #endif

@@ -1,6 +1,6 @@
 #ifndef SPLAY_TREE_H
 #define SPLAY_TREE_H
-#include"bst.h"
+#include"../Binary_Search_Tree/bst.h"
 
 
 //Splay tree removal has 2 methods: bottom-up
@@ -109,7 +109,7 @@ void Splay_Tree<Key,Value>::top_down(const Key& key)
 	Node<Key,Value>* node = BinarySearchTree<Key,Value>::internal_find(key);
 	if(node)
 	{
-		if(node != BinarySearchTree<Key,Value>::root)
+		if(node->parent)
 			splay(node);
 		Node<Key,Value>* left_tree_root = node->left_Child,
 						*right_tree_root = node->right_Child;
@@ -175,8 +175,11 @@ typename BinarySearchTree<Key,Value>::iterator Splay_Tree<Key,Value>::find(const
 template<typename Key,typename Value>
 void Splay_Tree<Key,Value>::splay(Node<Key,Value>* node)
 {
-	if(BinarySearchTree<Key,Value>::root == node)
+	if(!(node->parent))
+	{
+		BinarySearchTree<Key,Value>::root = node;
 		return;
+	}
 	Node<Key,Value>* p = node->parent,
 				   * gp = node->parent->parent;
 	if(gp)
@@ -190,29 +193,37 @@ void Splay_Tree<Key,Value>::splay(Node<Key,Value>* node)
 		{
 			BinarySearchTree<Key,Value>::rotate_right(gp);
 			BinarySearchTree<Key,Value>::rotate_right(p);
-			if(node != BinarySearchTree<Key,Value>::root)
+			if(node->parent)
 				splay(node);
+			else
+				BinarySearchTree<Key,Value>::root = node;
 		}
 		else if(p_is_lf && !node_is_lf)
 		{
 			BinarySearchTree<Key,Value>::rotate_left(p);
 			BinarySearchTree<Key,Value>::rotate_right(gp);
-			if(node != BinarySearchTree<Key,Value>::root)
+			if(node->parent)
 				splay(node);
+			else
+				BinarySearchTree<Key,Value>::root = node;
 		}
 		else if(!p_is_lf && node_is_lf)
 		{
 			BinarySearchTree<Key,Value>::rotate_right(p);
 			BinarySearchTree<Key,Value>::rotate_left(gp);
-			if(node != BinarySearchTree<Key,Value>::root)
+			if(node->parent)
 				splay(node);	
+			else
+				BinarySearchTree<Key,Value>::root = node;
 		}
 		else if(!p_is_lf && !node_is_lf)
 		{
 			BinarySearchTree<Key,Value>::rotate_left(gp);
 			BinarySearchTree<Key,Value>::rotate_left(p);
-			if(node != BinarySearchTree<Key,Value>::root)
+			if(node->parent)
 				splay(node);	
+			else
+				BinarySearchTree<Key,Value>::root = node;
 		}
 	}
 	else
@@ -221,8 +232,8 @@ void Splay_Tree<Key,Value>::splay(Node<Key,Value>* node)
 			BinarySearchTree<Key,Value>::rotate_right(p);
 		else
 			BinarySearchTree<Key,Value>::rotate_left(p);
+		BinarySearchTree<Key,Value>::root = node;
 	}
 }
-
 
 #endif
