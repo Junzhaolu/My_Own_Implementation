@@ -1,31 +1,19 @@
 //**************************************
-//For now, this trie is for the string 
-//data type only. The reason for this 
-//being a template is that I want to
-//practice.
+//For now, this is a "sparse" trie for
+// the "string data type" only. The 
+// reason for this being a template
+// is that I want to practice.
 //**************************************
+
 
 #ifndef PREFIX_TRIE_H
 #define PREFIX_TRIE_H
 
 
-//By default, the implementation is based on
-//sparse children node. To change to dense
-//children node,simply comment out the following
-//line
-#define SPARSE_PREFIX_TRIE
-
-#ifdef SPARSE_PREFIX_TRIE
-bool sparse_prefix_trie = 1;
-#else
-bool sparse_prefix_trie = 0;
-#endif
-
 #include<iostream>
 #include<string>
 
-//////////////////////////////////////////////
-#ifdef SPARSE_PREFIX_TRIE
+
 template<typename Key>
 struct Trie_Node
 {
@@ -361,23 +349,5 @@ void Trie<Key>::print_helper(Trie_Node<Key>* node, std::string word) const
 		print_helper(node->next,word);
 }
 
-
-#endif
-//////////////////////////////////////////////
-
-
-
-
-
-
-//////////////////////////////////////////////
-#ifndef SPARSE_PREFIX_TRIE
-template<typename Key>
-struct Trie_Node
-{
-	
-};
-#endif
-//////////////////////////////////////////////
 
 #endif
