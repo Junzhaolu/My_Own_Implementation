@@ -31,12 +31,12 @@ public:
 	void erase();
 	void erase(const std::string);
 	void print();
-	void rebuild_Trie();
 private:
 	Trie_Node* root;
 	std::string added_word;
 	short global_label_end;
 	void build();
+	void rebuild_Trie();
 	void clear_helper(Trie_Node*);
 	void print_helper(Trie_Node*,std::string);
 	bool build_helper(Trie_Node*,const short&,const unsigned&,std::vector<Trie_Node*>&);
